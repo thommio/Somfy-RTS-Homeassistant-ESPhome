@@ -1,0 +1,79 @@
+esphome:
+  name: somfy
+  platform: ESP32
+  board: nodemcu-32s
+  libraries:
+    - EEPROM
+    - SPI
+    - SmartRC-CC1101-Driver-Lib@2.5.6
+    - Somfy_Remote_Lib@0.4.1
+  includes:
+    - somfy_secrets.h
+    - somfy_cover.h
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret fallback_ssid
+    password: !secret fallback_password
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+web_server:
+  port: 80
+
+sensor:
+  - platform: uptime
+    name: Uptime Sensor
+
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+
+cover:
+  - platform: custom
+    lambda: |-
+      auto somfy_remote = new SomfyESPRemote();
+      somfy_remote->add_cover("somfy", "woonkamer", SOMFY_REMOTE_WOONKAMER);
+      somfy_remote->add_cover("somfy", "slaapkamer", SOMFY_REMOTE_SLAAPKAMER);
+      App.register_component(somfy_remote);
+      return somfy_remote->covers;
+    covers:
+      - id: "somfy"
+        name: "Somfy Cover"
+      - id: "somfy2"
+        name: "Somfy Cover2"
+
+switch:
+  - platform: template
+    name: "PROG"
+    turn_on_action:
+      - lambda: |-
+          ((SomfyESPCover*)id(somfy))->program();
+  - platform: template
+    name: "STOP"
+    turn_on_action:
+      - lambda: |-
+          ((SomfyESPCover*)id(somfy))->stop();
+  - platform: template
+    name: "PROG2"
+    turn_on_action:
+      - lambda: |-
+          ((SomfyESPCover*)id(somfy2))->program();
+  - platform: template
+    name: "STOP2"
+    turn_on_action:
+      - lambda: |-
+          ((SomfyESPCover*)id(somfy2))->stop();
